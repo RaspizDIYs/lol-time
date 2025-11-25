@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System.Reflection;
+using System.Threading.Tasks;
+using System.Windows;
 using H.NotifyIcon;
 using LolTime.App.Services;
 using LolTime.App.ViewModels;
@@ -40,10 +42,12 @@ public partial class App : Application
         _mainWindow = new MainWindow(mainViewModel);
 
         // Tray Icon
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Dev";
+
         _notifyIcon = new TaskbarIcon
         {
             Icon = System.Drawing.SystemIcons.Application,
-            ToolTipText = $"LolTime v{VelopackApp.GetAppSettings()?.DisplayVersion ?? "Dev"}"
+            ToolTipText = $"LolTime v{version}"
         };
         
         _notifyIcon.TrayMouseDoubleClick += (s, args) => ShowMainWindow();
@@ -82,7 +86,7 @@ public partial class App : Application
                     // Применяем и перезапускаем (опционально можно просто подготовить и обновить при выходе)
                     // Здесь мы применяем и перезапускаем сразу, или можно спросить пользователя.
                     // Для простоты - перезапуск.
-                    mgr.ApplyUpdatesAndRestart(newVersion, args: null);
+                    mgr.ApplyUpdatesAndRestart(newVersion);
                 }
             }
         }
