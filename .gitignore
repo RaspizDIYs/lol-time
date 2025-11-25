@@ -12,6 +12,7 @@ Releases/
 
 # IDE
 .vs/
+.idea/
 *.user
 *.suo
 
