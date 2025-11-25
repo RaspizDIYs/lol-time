@@ -1,0 +1,146 @@
+﻿<Window x:Class="LolTime.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:vm="clr-namespace:LolTime.App.ViewModels"
+        mc:Ignorable="d"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        TextElement.FontWeight="Regular"
+        TextElement.FontSize="13"
+        TextOptions.TextFormattingMode="Ideal" 
+        TextOptions.TextRenderingMode="Auto"        
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{DynamicResource MaterialDesignFont}"
+        Title="LolTime" Height="500" Width="700"
+        WindowStartupLocation="CenterScreen">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <materialDesign:ColorZone Mode="PrimaryMid" Padding="16" materialDesign:ElevationAssist.Elevation="Dp4">
+            <TextBlock Text="LolTime Stats" FontSize="20" FontWeight="Bold"/>
+        </materialDesign:ColorZone>
+
+        <TabControl Grid.Row="1" Margin="10" Style="{StaticResource MaterialDesignFilledTabControl}">
+            <TabItem Header="Сегодня">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding Tracker.TodayTime, StringFormat='{}{0:hh\\:mm\\:ss}'}" 
+                               FontSize="72" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                    <TextBlock Text="За сегодня" HorizontalAlignment="Center" FontSize="18" Opacity="0.7"/>
+                </StackPanel>
+            </TabItem>
+
+            <TabItem Header="Обзор">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding Tracker.WeekTime, StringFormat='{}{0:hh\\:mm}'}" 
+                                       FontSize="40" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                            <TextBlock Text="За неделю" HorizontalAlignment="Center" FontSize="14" Opacity="0.7"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding Tracker.WeekendTime, StringFormat='{}{0:hh\\:mm}'}" 
+                                       FontSize="40" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                            <TextBlock Text="За выходные" HorizontalAlignment="Center" FontSize="14" Opacity="0.7"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding Tracker.MonthTime, StringFormat='{}{0:hh\\:mm}'}" 
+                                       FontSize="40" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                            <TextBlock Text="За месяц" HorizontalAlignment="Center" FontSize="14" Opacity="0.7"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding Tracker.TotalTime, StringFormat='{}{0:hh\\:mm}'}" 
+                                       FontSize="40" FontWeight="Bold" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                            <TextBlock Text="Всего (Total)" HorizontalAlignment="Center" FontSize="14" Opacity="0.7"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </TabItem>
+            
+            <TabItem Header="История">
+                <DataGrid ItemsSource="{Binding History}" AutoGenerateColumns="False" IsReadOnly="True" 
+                          HeadersVisibility="Column" SelectionUnit="FullRow" CanUserAddRows="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Дата" Binding="{Binding Date, StringFormat=d}" Width="*"/>
+                        <DataGridTextColumn Header="Время" Binding="{Binding TotalTime, StringFormat='{}{0:hh\\:mm}'}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="Настройки">
+                <ScrollViewer>
+                    <StackPanel Margin="20" >
+                        <TextBlock Text="Лимиты (часы)" Style="{StaticResource MaterialDesignHeadline6TextBlock}"/>
+                        <Expander Header="Настройки лимитов" IsExpanded="True" Margin="0,10,0,0">
+                            <StackPanel Margin="10">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <TextBlock Text="Дневной лимит:" VerticalAlignment="Center" Width="120"/>
+                                    <TextBox Text="{Binding DailyLimitHours}" Width="100"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <TextBlock Text="Недельный лимит:" VerticalAlignment="Center" Width="120"/>
+                                    <TextBox Text="{Binding WeeklyLimitHours}" Width="100"/>
+                                </StackPanel>
+                                <Button Content="Сохранить" Command="{Binding SaveSettingsCommand}" Width="100" HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </Expander>
+                        
+                        <TextBlock Text="Уведомления" Style="{StaticResource MaterialDesignHeadline6TextBlock}" Margin="0,20,0,0"/>
+                        <Expander Header="Настройки алертов" IsExpanded="True" Margin="0,10,0,0">
+                            <StackPanel Margin="10">
+                                <TextBox Text="{Binding Settings.AlertMessage}" materialDesign:HintAssist.Hint="Текст сообщения" Margin="0,0,0,10"/>
+                                
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding Settings.AlertImagePath}" materialDesign:HintAssist.Hint="Путь к картинке" IsReadOnly="True"/>
+                                    <Button Grid.Column="1" Content="..." Command="{Binding BrowseImageCommand}" Margin="10,0,0,0" Style="{StaticResource MaterialDesignOutlinedButton}"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Text="{Binding Settings.AlertSoundPath}" materialDesign:HintAssist.Hint="Путь к звуку" IsReadOnly="True"/>
+                                    <Button Grid.Column="1" Content="..." Command="{Binding BrowseSoundCommand}" Margin="10,0,0,0" Style="{StaticResource MaterialDesignOutlinedButton}"/>
+                                </Grid>
+                                
+                                <ToggleButton IsChecked="{Binding Settings.HardMode}" HorizontalAlignment="Left" Margin="0,10,0,0">
+                                    <TextBlock Text="Жесткий режим (спам алертами)" Margin="10,0,0,0"/>
+                                </ToggleButton>
+                            </StackPanel>
+                        </Expander>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

@@ -1,0 +1,51 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger on tags like v1.0.0, v0.2.1, etc.
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Install Velopack Tool
+      run: dotnet tool install -g Velopack
+
+    - name: Get Version
+      id: get_version
+      shell: pwsh
+      run: |
+        $tag = "${{ github.ref_name }}"
+        if ($tag -match "^v") { $tag = $tag.Substring(1) }
+        echo "VERSION=$tag" >> $env:GITHUB_OUTPUT
+
+    - name: Publish App
+      run: dotnet publish LolTime.App/LolTime.App.csproj -c Release -r win-x64 -o publish --self-contained true
+
+    - name: Pack with Velopack
+      run: vpk pack -u LolTime -v ${{ steps.get_version.outputs.VERSION }} -p publish -e LolTime.App.exe
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: Releases/*
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
