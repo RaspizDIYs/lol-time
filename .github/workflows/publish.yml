@@ -50,6 +50,12 @@ jobs:
             echo "EXISTS=false" >> $env:GITHUB_OUTPUT
         }
 
+    - name: Check permissions
+      if: steps.check_tag.outputs.EXISTS == 'false'
+      run: |
+        echo "Checking token permissions..."
+        curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}
+
     - name: Setup .NET
       if: steps.check_tag.outputs.EXISTS == 'false'
       uses: actions/setup-dotnet@v4
