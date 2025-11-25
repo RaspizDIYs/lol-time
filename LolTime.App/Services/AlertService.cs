@@ -11,6 +11,8 @@ public class AlertService
     private readonly DataService _dataService;
     private DateTime _lastAlertTime = DateTime.MinValue;
     private MediaPlayer _player = new MediaPlayer();
+    private int _snoozeCount = 0;
+    private bool _isSnoozed = false;
 
     public AlertService(DataService dataService)
     {
@@ -19,18 +21,20 @@ public class AlertService
 
     public void TriggerAlert(string message)
     {
-        // Don't spam alerts. Wait at least 5 minutes between alerts if user ignores? 
-        // Or if it's "Hard Mode", maybe every minute?
-        // Let's say every 5 minutes for now.
-        if ((DateTime.Now - _lastAlertTime).TotalMinutes < 5 && !_dataService.Data.Settings.HardMode)
+        double cooldownMinutes = 5;
+        
+        if (_isSnoozed)
+        {
+            cooldownMinutes = 10; // Snooze duration
+        }
+        else if (_dataService.Data.Settings.HardMode)
+        {
+            cooldownMinutes = 0.5; // 30 seconds
+        }
+
+        if ((DateTime.Now - _lastAlertTime).TotalMinutes < cooldownMinutes)
         {
             return;
-        }
-        
-        // If hard mode, maybe every 30 seconds?
-        if ((DateTime.Now - _lastAlertTime).TotalSeconds < 30 && _dataService.Data.Settings.HardMode)
-        {
-             return;
         }
 
         _lastAlertTime = DateTime.Now;
@@ -41,7 +45,24 @@ public class AlertService
             PlaySound();
 
             // Show Window
-            var alertWindow = new AlertWindow(message, _dataService.Data.Settings.AlertImagePath);
+            var alertWindow = new AlertWindow(
+                message, 
+                _dataService.Data.Settings.AlertImagePath, 
+                _snoozeCount,
+                onSnooze: () => 
+                {
+                    _snoozeCount++;
+                    _isSnoozed = true;
+                    // Reset timer to now so the 10 min cooldown starts
+                    _lastAlertTime = DateTime.Now; 
+                },
+                onClose: () =>
+                {
+                    _snoozeCount = 0;
+                    _isSnoozed = false;
+                }
+            );
+            
             alertWindow.Show();
             alertWindow.Activate();
             alertWindow.Topmost = true;
@@ -69,4 +90,3 @@ public class AlertService
         catch { }
     }
 }
-

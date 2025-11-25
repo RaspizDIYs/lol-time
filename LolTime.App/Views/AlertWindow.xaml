@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
         Title="ALERT" Height="450" Width="400"
         WindowStyle="None" ResizeMode="NoResize"
@@ -21,16 +20,35 @@
             <Image x:Name="AlertImage" Grid.Row="0" Stretch="Uniform" Margin="0,0,0,20" />
             
             <TextBlock x:Name="AlertText" Grid.Row="1" 
-                       Text="ЧО ЕБЛАН? ЕЩЁ ЧАСИК? 😠" 
+                       Text="ЧО ЕБЛАН? ЕЩЁ ЧАСИК?" 
                        Foreground="White" FontSize="24" 
                        TextWrapping="Wrap" TextAlignment="Center" 
                        FontWeight="Bold" Margin="0,0,0,20"/>
 
-            <Button Grid.Row="2" Content="Окей, я понял" 
-                       HorizontalAlignment="Center" Width="150" Height="40"
-                       Background="#FF4545" Foreground="White"
-                       Click="CloseButton_Click"
-                       Style="{StaticResource MaterialDesignRaisedButton}"/>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="Всё, ухожу" 
+                        Margin="0,0,10,0"
+                        Width="120" Height="40"
+                        Background="#FF4545" Foreground="White"
+                        Click="CloseButton_Click"
+                        Template="{DynamicResource ButtonTemplate}"/>
+
+                <Button x:Name="SnoozeButton"
+                        Content="Ещё 10 мин" 
+                        Margin="10,0,0,0"
+                        Width="150" Height="40"
+                        Background="#555555" Foreground="White"
+                        Click="SnoozeButton_Click"
+                        Template="{DynamicResource ButtonTemplate}"/>
+            </StackPanel>
         </Grid>
     </Border>
+
+    <Window.Resources>
+        <ControlTemplate x:Key="ButtonTemplate" TargetType="Button">
+            <Border Background="{TemplateBinding Background}" CornerRadius="5">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+        </ControlTemplate>
+    </Window.Resources>
 </Window>

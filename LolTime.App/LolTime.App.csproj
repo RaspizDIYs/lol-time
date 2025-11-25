@@ -6,22 +6,26 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <!-- <ApplicationIcon>Assets\icon.ico</ApplicationIcon> -->
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     
     <!-- Versioning -->
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>User</Authors>
-    <Company>LolTime Inc.</Company>
+    <Company>G</Company>
     <Product>LolTime</Product>
     <StartupObject>LolTime.App.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="MaterialDesignThemes" Version="5.1.0" />
     <PackageReference Include="H.NotifyIcon.Wpf" Version="2.0.124" />
-    <PackageReference Include="Velopack" Version="0.0.942" />
     <PackageReference Include="System.Drawing.Common" Version="9.0.0" />
+    <PackageReference Include="Velopack" Version="0.0.942" />
+    <PackageReference Include="WPF-UI" Version="4.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\icon.ico" />
   </ItemGroup>
 
   <ItemGroup>

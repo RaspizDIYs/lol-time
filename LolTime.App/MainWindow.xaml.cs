@@ -1,12 +1,15 @@
-﻿using System;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using LolTime.App.ViewModels;
+using Wpf.Ui.Controls;
 
 namespace LolTime.App;
 
-public partial class MainWindow : Window
+public partial class MainWindow : FluentWindow
 {
+    // Флаг для реального закрытия приложения
+    public bool CanClose { get; set; } = false;
+
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
@@ -15,7 +18,15 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(CancelEventArgs e)
     {
-        e.Cancel = true;
-        this.Hide();
+        // Если не был вызван явный Exit, просто скрываем окно
+        if (!CanClose)
+        {
+            e.Cancel = true;
+            this.Hide();
+        }
+        else
+        {
+            base.OnClosing(e);
+        }
     }
 }

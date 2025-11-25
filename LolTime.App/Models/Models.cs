@@ -1,4 +1,5 @@
 using System;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace LolTime.App.Models;
 
@@ -21,17 +22,29 @@ public class AppData
     public AppSettings Settings { get; set; } = new();
 }
 
-public class AppSettings
+public partial class AppSettings : ObservableObject
 {
-    public TimeSpan DailyLimit { get; set; } = TimeSpan.FromHours(2);
-    public TimeSpan WeeklyLimit { get; set; } = TimeSpan.FromHours(10);
-    public TimeSpan SessionLimit { get; set; } = TimeSpan.MaxValue;
-    
-    public string AlertImagePath { get; set; } = "";
-    public string AlertSoundPath { get; set; } = "";
-    public string AlertMessage { get; set; } = "ЧО ЕБЛАН? ЕЩЁ ЧАСИК? 😠";
-    
-    public bool AutoStart { get; set; } = true;
-    public bool HardMode { get; set; } = false;
-}
+    [ObservableProperty]
+    private TimeSpan _dailyLimit = TimeSpan.FromHours(2);
 
+    [ObservableProperty]
+    private TimeSpan _weeklyLimit = TimeSpan.FromHours(10);
+
+    [ObservableProperty]
+    private TimeSpan _sessionLimit = TimeSpan.MaxValue;
+    
+    [ObservableProperty]
+    private string _alertImagePath = "";
+
+    [ObservableProperty]
+    private string _alertSoundPath = "";
+
+    [ObservableProperty]
+    private string _alertMessage = "ЧО ЕБЛАН? ЕЩЁ ЧАСИК?";
+    
+    [ObservableProperty]
+    private bool _autoStart = true;
+
+    [ObservableProperty]
+    private bool _hardMode = false;
+}

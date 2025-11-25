@@ -8,6 +8,7 @@ public class DataService
 {
     private const string FileName = "loltime_data.json";
     private readonly string _filePath;
+    private readonly object _lock = new();
 
     public AppData Data { get; private set; }
 
@@ -39,8 +40,27 @@ public class DataService
 
     public void SaveData()
     {
-        var json = JsonSerializer.Serialize(Data, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(_filePath, json);
+        lock (_lock)
+        {
+            var json = JsonSerializer.Serialize(Data, new JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(_filePath, json);
+        }
+    }
+
+    public void AddSession(Session session)
+    {
+        lock (_lock)
+        {
+            Data.Sessions.Add(session);
+            SaveData();
+        }
+    }
+
+    public List<Session> GetSessionsSnapshot()
+    {
+        lock (_lock)
+        {
+            return new List<Session>(Data.Sessions);
+        }
     }
 }
-

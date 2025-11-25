@@ -9,11 +9,12 @@ public class GameStatusMessage
     public GameStatusMessage(bool isRunning) => IsRunning = isRunning;
 }
 
-public class GameMonitorService
+public class GameMonitorService : IDisposable
 {
-    private readonly Timer _timer;
+    private readonly Timer? _timer;
     private bool _wasRunning = false;
-    private const int PollInterval = 1000; // 1 second
+    private const int PollInterval = 1000;
+    private bool _disposed;
 
     public bool IsGameRunning { get; private set; }
 
@@ -24,17 +25,31 @@ public class GameMonitorService
 
     private void CheckProcess(object? state)
     {
-        var processes = Process.GetProcesses();
-        var isRunning = processes.Any(p => 
-            p.ProcessName.Equals("LeagueClient", StringComparison.OrdinalIgnoreCase) || 
-            p.ProcessName.Equals("League of Legends", StringComparison.OrdinalIgnoreCase));
+        if (_disposed) return;
 
-        if (isRunning != _wasRunning)
+        try
         {
-            _wasRunning = isRunning;
-            IsGameRunning = isRunning;
-            WeakReferenceMessenger.Default.Send(new GameStatusMessage(isRunning));
+            var processes = Process.GetProcesses();
+            var isRunning = processes.Any(p => 
+                p.ProcessName.Equals("LeagueClient", StringComparison.OrdinalIgnoreCase) || 
+                p.ProcessName.Equals("League of Legends", StringComparison.OrdinalIgnoreCase));
+
+            if (isRunning != _wasRunning)
+            {
+                _wasRunning = isRunning;
+                IsGameRunning = isRunning;
+                WeakReferenceMessenger.Default.Send(new GameStatusMessage(isRunning));
+            }
+        }
+        catch
+        {
+            // Ignore permission errors
         }
     }
-}
 
+    public void Dispose()
+    {
+        _disposed = true;
+        _timer?.Dispose();
+    }
+}

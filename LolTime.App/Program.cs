@@ -1,6 +1,7 @@
 using System;
-using System.Windows;
 using Velopack;
+using LolTime.App.Views;
+using System.Windows;
 
 namespace LolTime.App;
 
@@ -23,7 +24,7 @@ public static class Program
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Fatal Error: {ex.Message}");
+            ErrorWindow.Show(ex);
         }
     }
 }

@@ -4,30 +4,25 @@ using LolTime.App.Models;
 
 namespace LolTime.App.Services;
 
-public partial class TimeTrackerService : ObservableObject, IRecipient<GameStatusMessage>
+public class SessionEndedMessage(Session session)
+{
+    public Session Session { get; } = session;
+}
+
+public partial class TimeTrackerService : ObservableObject, IRecipient<GameStatusMessage>, IDisposable
 {
     private readonly DataService _dataService;
-    private readonly AlertService _alertService; // We'll create this next
+    private readonly AlertService _alertService;
     private DateTime? _currentSessionStart;
-    private System.Threading.Timer _updateTimer;
+    private readonly Timer _updateTimer;
+    private bool _disposed;
 
-    [ObservableProperty]
-    private TimeSpan _todayTime;
-    
-    [ObservableProperty]
-    private TimeSpan _weekTime;
-
-    [ObservableProperty]
-    private TimeSpan _weekendTime;
-
-    [ObservableProperty]
-    private TimeSpan _monthTime;
-
-    [ObservableProperty]
-    private TimeSpan _totalTime;
-
-    [ObservableProperty]
-    private TimeSpan _currentSessionDuration;
+    [ObservableProperty] private TimeSpan _todayTime;
+    [ObservableProperty] private TimeSpan _weekTime;
+    [ObservableProperty] private TimeSpan _weekendTime;
+    [ObservableProperty] private TimeSpan _monthTime;
+    [ObservableProperty] private TimeSpan _totalTime;
+    [ObservableProperty] private TimeSpan _currentSessionDuration;
 
     public TimeTrackerService(DataService dataService, AlertService alertService)
     {
@@ -36,7 +31,7 @@ public partial class TimeTrackerService : ObservableObject, IRecipient<GameStatu
         WeakReferenceMessenger.Default.Register(this);
         
         CalculateStats();
-        _updateTimer = new System.Threading.Timer(UpdateTick, null, 1000, 1000);
+        _updateTimer = new Timer(UpdateTick, null, 1000, 1000);
     }
 
     public void Receive(GameStatusMessage message)
@@ -54,25 +49,25 @@ public partial class TimeTrackerService : ObservableObject, IRecipient<GameStatu
             {
                 var end = DateTime.Now;
                 var session = new Session { Start = _currentSessionStart.Value, End = end };
-                _dataService.Data.Sessions.Add(session);
-                _dataService.SaveData();
+                
+                _dataService.AddSession(session);
+                
                 _currentSessionStart = null;
                 CurrentSessionDuration = TimeSpan.Zero;
                 CalculateStats();
+                
+                WeakReferenceMessenger.Default.Send(new SessionEndedMessage(session));
             }
         }
     }
 
     private void UpdateTick(object? state)
     {
+        if (_disposed) return;
+
         if (_currentSessionStart != null)
         {
             CurrentSessionDuration = DateTime.Now - _currentSessionStart.Value;
-            
-            // Real-time stats update
-            // We add current session to "Today" for display purposes without saving yet
-            // Actually, let's just re-calculate stats including the current pending session
-            
             CalculateStats(includeCurrent: true);
             CheckLimits();
         }
@@ -83,35 +78,30 @@ public partial class TimeTrackerService : ObservableObject, IRecipient<GameStatu
         var now = DateTime.Now;
         var today = now.Date;
         
-        // Calculate start of week (Monday)
         var diff = (7 + (now.DayOfWeek - DayOfWeek.Monday)) % 7;
         var startOfWeek = today.AddDays(-1 * diff);
 
-        var sessions = _dataService.Data.Sessions;
+        var sessions = _dataService.GetSessionsSnapshot();
         
-        var todaySessions = sessions.Where(s => s.Start.Date == today).ToList();
-        var weekSessions = sessions.Where(s => s.Start.Date >= startOfWeek).ToList();
-        var weekendSessions = sessions.Where(s => s.Start.DayOfWeek == DayOfWeek.Saturday || s.Start.DayOfWeek == DayOfWeek.Sunday).ToList(); // All time weekends
-        // "Time for weekend" usually means "This weekend" or "Weekends in general"?
-        // Task says "Time for day", "Time for week", "Time for weekend", "Total".
-        // Usually "Time for weekend" in a weekly context implies "This week's weekend".
-        // But if today is Monday, weekend is 0. 
-        // Let's assume "Time for weekend" means "Time played during weekends this week" (which happens only if today is Sat/Sun) OR just global "Weekend stats"?
-        // Let's stick to "This week's weekend" for now as it fits the dashboard context.
-        var thisWeekendSessions = weekSessions.Where(s => s.Start.DayOfWeek == DayOfWeek.Saturday || s.Start.DayOfWeek == DayOfWeek.Sunday).ToList();
-        var monthSessions = sessions.Where(s => s.Start.Month == now.Month && s.Start.Year == now.Year).ToList();
+        var todaySessions = sessions.Where(s => s.Start.Date == today);
+        var weekSessions = sessions.Where(s => s.Start.Date >= startOfWeek);
+        var weekendSessions = weekSessions.Where(s => s.Start.DayOfWeek == DayOfWeek.Saturday || s.Start.DayOfWeek == DayOfWeek.Sunday);
+        var monthSessions = sessions.Where(s => s.Start.Month == now.Month && s.Start.Year == now.Year);
 
         TimeSpan todaySum = TimeSpan.Zero;
+        foreach(var s in todaySessions) todaySum += s.Duration;
+        
         TimeSpan weekSum = TimeSpan.Zero;
-        TimeSpan weekendSum = TimeSpan.Zero;
-        TimeSpan monthSum = TimeSpan.Zero;
-        TimeSpan totalSum = TimeSpan.Zero;
+        foreach(var s in weekSessions) weekSum += s.Duration;
 
-        foreach (var s in todaySessions) todaySum += s.Duration;
-        foreach (var s in weekSessions) weekSum += s.Duration;
-        foreach (var s in thisWeekendSessions) weekendSum += s.Duration;
-        foreach (var s in monthSessions) monthSum += s.Duration;
-        foreach (var s in sessions) totalSum += s.Duration;
+        TimeSpan weekendSum = TimeSpan.Zero;
+        foreach(var s in weekendSessions) weekendSum += s.Duration;
+        
+        TimeSpan monthSum = TimeSpan.Zero;
+        foreach(var s in monthSessions) monthSum += s.Duration;
+
+        TimeSpan totalSum = TimeSpan.Zero;
+        foreach(var s in sessions) totalSum += s.Duration;
 
         if (includeCurrent && _currentSessionStart != null)
         {
@@ -120,6 +110,7 @@ public partial class TimeTrackerService : ObservableObject, IRecipient<GameStatu
             weekSum += currentDur;
             monthSum += currentDur;
             totalSum += currentDur;
+            
             if (now.DayOfWeek == DayOfWeek.Saturday || now.DayOfWeek == DayOfWeek.Sunday)
             {
                 weekendSum += currentDur;
@@ -139,21 +130,18 @@ public partial class TimeTrackerService : ObservableObject, IRecipient<GameStatu
         bool alertNeeded = false;
         string message = limits.AlertMessage;
 
-        // Check Session Limit
         if (limits.SessionLimit != TimeSpan.MaxValue && CurrentSessionDuration > limits.SessionLimit)
         {
             alertNeeded = true;
             message = $"{limits.AlertMessage}\n(Session Limit Exceeded)";
         }
         
-        // Check Daily Limit
         if (limits.DailyLimit != TimeSpan.MaxValue && TodayTime > limits.DailyLimit)
         {
             alertNeeded = true;
             message = $"{limits.AlertMessage}\n(Daily Limit Exceeded)";
         }
 
-        // Check Weekly Limit
         if (limits.WeeklyLimit != TimeSpan.MaxValue && WeekTime > limits.WeeklyLimit)
         {
             alertNeeded = true;
@@ -165,5 +153,11 @@ public partial class TimeTrackerService : ObservableObject, IRecipient<GameStatu
             _alertService.TriggerAlert(message);
         }
     }
-}
 
+    public void Dispose()
+    {
+        _disposed = true;
+        _updateTimer?.Dispose();
+        WeakReferenceMessenger.Default.UnregisterAll(this);
+    }
+}
