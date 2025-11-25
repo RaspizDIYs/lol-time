@@ -1,51 +1,81 @@
-name: Publish Release
+name: Auto Release
 
 on:
   push:
-    tags:
-      - 'v*' # Trigger on tags like v1.0.0, v0.2.1, etc.
-  workflow_dispatch: # Allow manual trigger
+    branches:
+      - master
+    paths:
+      - 'LolTime.App/LolTime.App.csproj' # Only trigger if csproj (version) might have changed
+      - '.github/workflows/**'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  build:
+  release:
     runs-on: windows-latest
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get Version from CSPROJ
+      id: version
+      shell: pwsh
+      run: |
+        [xml]$csproj = Get-Content LolTime.App/LolTime.App.csproj
+        $ver = $csproj.Project.PropertyGroup.Version
+        if (-not $ver) { 
+            Write-Error "Version not found in csproj" 
+            exit 1 
+        }
+        Write-Host "Detected Version: $ver"
+        echo "VERSION=$ver" >> $env:GITHUB_OUTPUT
+        echo "TAG=v$ver" >> $env:GITHUB_OUTPUT
+
+    - name: Check if Tag Exists
+      id: check_tag
+      shell: pwsh
+      run: |
+        $tag = "${{ steps.version.outputs.TAG }}"
+        $exists = git tag -l $tag
+        if ($exists) {
+            Write-Host "Tag $tag already exists. Skipping build."
+            echo "EXISTS=true" >> $env:GITHUB_OUTPUT
+        } else {
+            Write-Host "Tag $tag is new. Proceeding with release."
+            echo "EXISTS=false" >> $env:GITHUB_OUTPUT
+        }
 
     - name: Setup .NET
+      if: steps.check_tag.outputs.EXISTS == 'false'
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
 
     - name: Install Velopack Tool
+      if: steps.check_tag.outputs.EXISTS == 'false'
       run: dotnet tool install -g Velopack
 
-    - name: Get Version
-      id: get_version
-      shell: pwsh
-      run: |
-        $tag = "${{ github.ref_name }}"
-        if ($tag -match "^v") { $tag = $tag.Substring(1) }
-        echo "VERSION=$tag" >> $env:GITHUB_OUTPUT
-
     - name: Publish App
+      if: steps.check_tag.outputs.EXISTS == 'false'
       run: dotnet publish LolTime.App/LolTime.App.csproj -c Release -r win-x64 -o publish --self-contained true
 
     - name: Pack with Velopack
-      run: vpk pack -u LolTime -v ${{ steps.get_version.outputs.VERSION }} -p publish -e LolTime.App.exe
+      if: steps.check_tag.outputs.EXISTS == 'false'
+      run: vpk pack -u LolTime -v ${{ steps.version.outputs.VERSION }} -p publish -e LolTime.App.exe
 
     - name: Create Release
+      if: steps.check_tag.outputs.EXISTS == 'false'
       uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
       with:
+        tag_name: ${{ steps.version.outputs.TAG }}
+        name: Release ${{ steps.version.outputs.VERSION }}
         files: Releases/*
         draft: false
         prerelease: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
