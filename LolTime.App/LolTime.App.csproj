@@ -9,9 +9,9 @@
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     
     <!-- Versioning -->
-    <Version>1.1.2</Version>
+    <Version>1.1.3</Version>
     <Authors>User</Authors>
-    <Company>G</Company>
+    <Company>GoodLuck</Company>
     <Product>LolTime</Product>
     <StartupObject>LolTime.App.Program</StartupObject>
   </PropertyGroup>
